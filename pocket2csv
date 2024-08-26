@@ -130,6 +130,7 @@ if .tags == null
  .tags = .tags 
  end
 ' \
+| jq '.item_id = (.item_id | tonumber)' \
 | jq '.favorite = (.favorite | tonumber)' \
 | jq '.has_video = (.has_video | tonumber)' \
 | jq '.has_image = (.has_image | tonumber)' \
@@ -157,6 +158,7 @@ if .tags == null
 | jq '.excerpt = (.excerpt | gsub("[\\n\\t]"; ""))' \
 | jq '.given_title = (.given_title | gsub("[\\n\\t]"; ""))' \
 | jq '{
+item_id: .item_id,
 time_added: .time_added,
 year_added: .year_added,
 month_added: .month_added,
