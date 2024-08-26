@@ -33,6 +33,10 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 
+# Initialize variables
+CONSUMER_KEY=""
+TOKEN=""
+
 read -r -d '' LOGO <<'EOF'
 ...                   _          _    ___                   
                      | |        | |  |__ \                  
@@ -49,53 +53,73 @@ echo ""
 echo "$LOGO"
 echo ""
 echo ""
-read -p '[1] Enter Your Pocket API Consumer Key: ' CONSUMER_KEY
 
-read -r -d '' MY_DATA <<EOF
+while getopts "k:t:" opt; do
+ case $opt in
+  k)
+   CONSUMER_KEY=$OPTARG
+   ;;
+  t)
+   MY_ACCESS_TOKEN=$OPTARG
+   ;;
+ esac
+done
+
+if [ "$CONSUMER_KEY" == "" ]
+then
+  read -p '[1] Enter Your Pocket API Consumer Key: ' CONSUMER_KEY
+
+  read -r -d '' MY_DATA <<EOF
 {
 "consumer_key":"$CONSUMER_KEY",
 "redirect_uri":"https://getpocket.com"
 }
 EOF
+fi
 
-MY_CODE=$(\
-curl \
-  --silent \
-  --request POST \
-  --url https://getpocket.com/v3/oauth/request \
-  --header 'content-type: application/json; charset=UTF-8' \
-  --header 'x-accept: application/json' \
-  --data "$MY_DATA" \
-| jq -r .code)
+if [ "$MY_ACCESS_TOKEN" == "" ]
+then
+  MY_CODE=$(\
+  curl \
+    --silent \
+    --request POST \
+    --url https://getpocket.com/v3/oauth/request \
+    --header 'content-type: application/json; charset=UTF-8' \
+    --header 'x-accept: application/json' \
+    --data "$MY_DATA" \
+  | jq -r .code)
+  
+  echo "[2] Visit this link in a browser:"
+  echo ""
+  echo "https://getpocket.com/auth/authorize?request_token=$MY_CODE&redirect_uri=https://getpocket.com"
+  echo ""
+  echo "[3] Login to Pocket (if not already logged in)."
+  echo "[4] Click the Authorize button."
+  echo "[!] "
+  echo "[!] DO NOT CONTINUE UNTIL YOU DO [2], [3], [4] !"
+  echo "[!] OTHERWISE THIS SCRIPT WILL FAIL. ☠"
+  echo "[!] "
+  read -p "[5] Press any key to continue (CTRL-C to quit)... "
 
-echo "[2] Visit this link in a browser:"
-echo ""
-echo "https://getpocket.com/auth/authorize?request_token=$MY_CODE&redirect_uri=https://getpocket.com"
-echo ""
-echo "[3] Login to Pocket (if not already logged in)."
-echo "[4] Click the Authorize button."
-echo "[!] "
-echo "[!] DO NOT CONTINUE UNTIL YOU DO [2], [3], [4] !"
-echo "[!] OTHERWISE THIS SCRIPT WILL FAIL. ☠"
-echo "[!] "
-read -p "[5] Press any key to continue (CTRL-C to quit)... "
-
-read -r -d '' MY_DATA <<EOF
-{
-"consumer_key":"$CONSUMER_KEY",
-"code":"$MY_CODE"
-}
+  read -r -d '' MY_DATA <<EOF
+  {
+  "consumer_key":"$CONSUMER_KEY",
+  "code":"$MY_CODE"
+  }
 EOF
 
-MY_ACCESS_TOKEN=$(\
-curl \
-  --silent \
-  --request POST \
-  --url https://getpocket.com/v3/oauth/authorize \
-  --header 'content-type: application/json; charset=UTF-8' \
-  --header 'x-accept: application/json' \
-  --data "$MY_DATA" \
-| jq -r .access_token)
+  MY_ACCESS_TOKEN=$(\
+  curl \
+    --silent \
+    --request POST \
+    --url https://getpocket.com/v3/oauth/authorize \
+    --header 'content-type: application/json; charset=UTF-8' \
+    --header 'x-accept: application/json' \
+    --data "$MY_DATA" \
+  | jq -r .access_token)
+
+  echo "Token: $MY_ACCESS_TOKEN"
+fi
 
 read -r -d '' MY_DATA <<EOF
 {
