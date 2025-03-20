@@ -32,12 +32,23 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Modifications:
+# Modification History:
 #
 # - 26 Aug 2024 by Chris K.Y. Fung:
-#   - Added new flags `-k` (consumer key) and `-t` (access token) for command-line input.
-#   - Updated logic to handle these flags and skip unnecessary prompts/OAuth steps.
-#   - Improved script usability with streamlined user interactions.
+#   - Command-Line Flags:
+#     - Added new flags `-k` (consumer key) and `-t` (access token) for command-line input.
+#     - Updated script logic to handle these flags, skipping unnecessary prompts or OAuth steps when the flags are used.
+#   - Usability Improvements:
+#     - Streamlined user interactions by reducing redundant prompts and improving overall script usability.
+#
+# - 20 Mar 2025 by Chris K.Y. Fung:
+#   - Pagination Support:
+#     - Implemented pagination logic to fetch bookmarks in batches of 30 items from the Pocket API.
+#     - Used a `while` loop with `count` and `offset` parameters to handle multiple pages efficiently.
+#     - Added real-time progress tracking, displaying download progress as a percentage.
+#   - JSON Processing Enhancements:
+#     - Enhanced JSON processing logic to gracefully handle null values using `select(. != null)`.
+#     - Optimized the conversion of fields such as `item_id`, `favorite`, and `time_added` to ensure type consistency and avoid errors.
 #
 # Original copyright and license information remains intact.
 
@@ -135,96 +146,95 @@ read -r -d '' MY_DATA <<EOF
 "sort": "newest",
 "detailType": "complete",
 "consumer_key":"$CONSUMER_KEY",
-"access_token":"$MY_ACCESS_TOKEN"
+"access_token":"$MY_ACCESS_TOKEN",
+"count": "30",
+"offset": "0",
+"total": "1"
 }
 EOF
 
 echo "[+] Downloading Pocket bookmarks to bookmarks.json..."
 
-curl \
-  --silent \
-  --request POST \
-  --url https://getpocket.com/v3/get \
-  --header 'content-type: application/json' \
-  --output bookmarks.json \
-  --data "$MY_DATA"
+# Pagination logic to handle multiple pages of bookmarks from the Pocket API
+# - Fetches data in batches of 30 items (controlled by "count").
+# - Increments the "offset" after each request to retrieve the next page.
+# - Continues until all pages are downloaded (tracked by "total" and "offset").
+TOTAL=1
+OFFSET=0
+> bookmarks.json
 
+while [ $OFFSET -lt $TOTAL ]; do
+  RESPONSE=$(curl \
+    --silent \
+    --request POST \
+    --url https://getpocket.com/v3/get \
+    --header 'content-type: application/json' \
+    --data "$MY_DATA")
 
-echo "[+] Converting bookmarks.json to bookmarks.csv..."
-echo " [>] Creating intermediate file bookmarks-tmp.json..."
+  echo "$RESPONSE" | jq '.list | select(. != null) | .[]' >> bookmarks.json
 
-jq '.list | .[]' bookmarks.json \
-| jq '
-if .tags == null
- then
- .tags = {}
- else
- .tags = .tags 
- end
-' \
-| jq '.item_id = (.item_id | tonumber)' \
-| jq '.favorite = (.favorite | tonumber)' \
-| jq '.has_video = (.has_video | tonumber)' \
-| jq '.has_image = (.has_image | tonumber)' \
-| jq '.word_count = (.word_count | tonumber)' \
-| jq '.time_added = (.time_added | tonumber | todate)' \
-| jq '.year_added = (.time_added | split("T") | .[0] | split("-") | .[0] | tonumber)' \
-| jq '.month_added = (.time_added | split("T") | .[0] | split("-") | .[1] | tonumber)' \
-| jq '.day_added = (.time_added | split("T") | .[0] | split("-") | .[2] | tonumber)' \
-| jq '.hour_added = (.time_added | split("T") | .[1] | split(":") | .[0] | tonumber)' \
-| jq '.tags = (.tags | keys)' \
-| jq '.ntags = (.tags | length)' \
-| jq '.tags = (.tags | join(" AND "))' \
-| jq '.given_domain = (.given_url | split ("/") | .[2])' \
-| jq '.n_given_domain = (.given_url | split (".") | length)' \
-| jq '.resolved_domain = (.resolved_url | split ("/") | .[2])' \
-| jq '.n_resolved_domain = (.resolved_url | split (".") | length)' \
-| jq '.n_domain_equal = (.n_given_domain == .n_resolved_domain)' \
-| jq '.given_tld1 = (.given_domain | tostring | split(".") | .[length-1])' \
-| jq '.given_tld2 = (.given_domain | tostring | split(".") | .[length-2])' \
-| jq '.resolved_tld1 = (.resolved_domain | tostring | split(".") | .[length-1])' \
-| jq '.resolved_tld2 = (.resolved_domain | tostring |split(".") | .[length-2])' \
-| jq '.titles_match = (.given_title == .resolved_title)' \
-| jq '.urls_match = (.given_url == .resolved_url)' \
-| jq '.domains_match = (.given_domain == .resolved_domain)' \
-| jq '.excerpt = (.excerpt | gsub("[\\n\\t]"; ""))' \
-| jq '.given_title = (.given_title | gsub("[\\n\\t]"; ""))' \
-| jq '{
-item_id: .item_id,
-time_added: .time_added,
-year_added: .year_added,
-month_added: .month_added,
-day_added: .day_added,
-hour_added: .hour_added,
-favorite: .favorite,
-has_video: .has_video,
-has_image: .has_image,
-word_count: .word_count,
-n_given_domain: .n_given_domain,
-n_resolved_domain: .n_resolved_domain,
-n_domain_equal: .n_domain_equal,
-ntags: .ntags,
-tags: .tags,
-titles_match: .titles_match,
-domains_match: .domains_match,
-urls_match: .urls_match,
-given_title: .given_title,
-given_domain: .given_domain,
-given_tld1: .given_tld1,
-given_tld2: .given_tld2,
-given_url: .given_url,
-resolved_title: .resolved_title,
-resolved_domain: .resolved_domain,
-resolved_tld1: .resolved_tld1,
-resolved_tld2: .resolved_tld2,
-resolved_url: .resolved_url,
-excerpt: .excerpt}' > bookmarks-tmp.json
+  TOTAL=$(echo "$RESPONSE" | jq '.total // 0' | bc)
+  OFFSET=$((OFFSET + 30))
 
-jq -r -s '.[0] | keys_unsorted | @csv' < bookmarks-tmp.json > bookmarks.csv
+  # Calculate and display progress
+  PROGRESS=$((OFFSET * 100 / TOTAL))
+  echo -n -e "[+] Progress: $PROGRESS% ($OFFSET/$TOTAL)\033[0K\r"
 
-echo " [>] Writing to bookmarks.csv..."
+  read -r -d '' MY_DATA <<EOF
+{
+"state": "all",
+"sort": "newest",
+"detailType": "complete",
+"consumer_key":"$CONSUMER_KEY",
+"access_token":"$MY_ACCESS_TOKEN",
+"count": "30",
+"offset": "$OFFSET",
+"total": "1"
+}
+EOF
+done
 
-jq 'map(.)' bookmarks-tmp.json \
-| jq -r '@csv' >> bookmarks.csv
+echo "[+] All pages downloaded. Creating intermediate file bookmarks-tmp.json..."
+
+# Process the downloaded bookmarks.json file into an intermediate format
+# - Handles null values gracefully using `select(. != null)` to avoid errors.
+# - Converts fields like item_id, favorite, and time_added to appropriate types.
+jq -s '.' bookmarks.json \
+| jq 'map(
+  if .tags == null then .tags = {} else .tags = .tags end
+  | .item_id = (.item_id | select(. != null) | tonumber)
+  | .favorite = (.favorite | select(. != null) | tonumber)
+  | .has_video = (.has_video | select(. != null) | tonumber)
+  | .has_image = (.has_image | select(. != null) | tonumber)
+  | .word_count = (.word_count | select(. != null) | tonumber)
+  | .time_added = (.time_added | select(. != null) | tonumber | todate)
+  | .year_added = (.time_added | select(. != null) | split("T") | .[0] | split("-") | .[0] | tonumber)
+  | .month_added = (.time_added | select(. != null) | split("T") | .[0] | split("-") | .[1] | tonumber)
+  | .day_added = (.time_added | select(. != null) | split("T") | .[0] | split("-") | .[2] | tonumber)
+  | .hour_added = (.time_added | select(. != null) | split("T") | .[1] | split(":") | .[0] | tonumber)
+  | .tags = (.tags | select(. != null) | keys)
+  | .ntags = (.tags | select(. != null) | length)
+  | .tags = (.tags | select(. != null) | join(" AND "))
+  | .given_domain = (.given_url | select(. != null) | split ("/") | .[2])
+  | .n_given_domain = (.given_url | select(. != null) | split (".") | length)
+  | .resolved_domain = (.resolved_url | select(. != null) | split ("/") | .[2])
+  | .n_resolved_domain = (.resolved_url | select(. != null) | split (".") | length)
+  | .n_domain_equal = (.n_given_domain == .n_resolved_domain)
+  | .given_tld1 = (.given_domain | select(. != null) | tostring | split(".") | .[length-1])
+  | .given_tld2 = (.given_domain | select(. != null) | tostring | split(".") | .[length-2])
+  | .resolved_tld1 = (.resolved_domain | select(. != null) | tostring | split(".") | .[length-1])
+  | .resolved_tld2 = (.resolved_domain | select(. != null) | tostring | split(".") | .[length-2])
+  | .titles_match = (.given_title == .resolved_title)
+  | .urls_match = (.given_url == .resolved_url)
+  | .domains_match = (.given_domain == .resolved_domain)
+  | .excerpt = (.excerpt | select(. != null) | gsub("[\\n\\t]"; ""))
+  | .given_title = (.given_title | select(. != null) | gsub("[\\n\\t]"; ""))
+)' > bookmarks-tmp.json
+
+echo "[+] Converting bookmarks-tmp.json to bookmarks.csv..."
+
+jq -r -s 'if .[0] != null then .[0] | keys_unsorted | @csv else empty end' < bookmarks-tmp.json > bookmarks.csv
+
+jq -r 'map(select(.item_id != null and .resolved_url != null)) | .[] | [.item_id, .time_added, .given_title, .resolved_url, .tags] | @csv' bookmarks-tmp.json >> bookmarks.csv
 
 echo "[+] Done."
