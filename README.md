@@ -53,8 +53,25 @@ To use both flags together:
 
 The following modifications were made by [Chris K.Y. Fung](https://github.com/chriskyfung):
 
-- Added new command-line flags `-k` and `-t` to allow users to pass the consumer key and access token directly.
-- Updated the script logic to handle these new flags and skip unnecessary prompts or OAuth steps when the flags are used.
-- Minor adjustments to improve usability and streamline the user experience.
+1. Command-Line Flags for Consumer Key and Access Token
 
-For more details, see the "Features" section above.
+   * Added new flags `-k` and `-t` to allow users to pass the consumer key and access token directly via the command line.
+   * Updated the script logic to handle these flags, skipping unnecessary prompts or OAuth steps when the flags are used.
+
+2. Pagination Support
+
+   * Implemented pagination support to fetch bookmarks in batches of 30 items from the Pocket API.
+   * Used a `while` loop with `count` and `offset` parameters to handle multiple pages efficiently.
+   * Added real-time progress tracking, displaying the download progress as a percentage.
+
+3. JSON Data Processing Enhancements
+
+   * Enhanced JSON processing logic to gracefully handle null values using `select(. != null)`.
+   * Optimized the conversion of fields such as `item_id`, `favorite`, and `time_added` to ensure type consistency and avoid errors.
+
+4. Usability Improvements
+
+   * Streamlined user interactions by reducing redundant prompts and improving error handling.
+   * Improved overall script performance and reliability for large datasets.
+
+For more details, see the commit history or review the script annotations.

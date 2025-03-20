@@ -32,12 +32,23 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Modifications:
+# Modification History:
 #
 # - 26 Aug 2024 by Chris K.Y. Fung:
-#   - Added new flags `-k` (consumer key) and `-t` (access token) for command-line input.
-#   - Updated logic to handle these flags and skip unnecessary prompts/OAuth steps.
-#   - Improved script usability with streamlined user interactions.
+#   - Command-Line Flags:
+#     - Added new flags `-k` (consumer key) and `-t` (access token) for command-line input.
+#     - Updated script logic to handle these flags, skipping unnecessary prompts or OAuth steps when the flags are used.
+#   - Usability Improvements:
+#     - Streamlined user interactions by reducing redundant prompts and improving overall script usability.
+#
+# - 20 Mar 2025 by Chris K.Y. Fung:
+#   - Pagination Support:
+#     - Implemented pagination logic to fetch bookmarks in batches of 30 items from the Pocket API.
+#     - Used a `while` loop with `count` and `offset` parameters to handle multiple pages efficiently.
+#     - Added real-time progress tracking, displaying download progress as a percentage.
+#   - JSON Processing Enhancements:
+#     - Enhanced JSON processing logic to gracefully handle null values using `select(. != null)`.
+#     - Optimized the conversion of fields such as `item_id`, `favorite`, and `time_added` to ensure type consistency and avoid errors.
 #
 # Original copyright and license information remains intact.
 
@@ -144,6 +155,10 @@ EOF
 
 echo "[+] Downloading Pocket bookmarks to bookmarks.json..."
 
+# Pagination logic to handle multiple pages of bookmarks from the Pocket API
+# - Fetches data in batches of 30 items (controlled by "count").
+# - Increments the "offset" after each request to retrieve the next page.
+# - Continues until all pages are downloaded (tracked by "total" and "offset").
 TOTAL=1
 OFFSET=0
 > bookmarks.json
@@ -181,6 +196,9 @@ done
 
 echo "[+] All pages downloaded. Creating intermediate file bookmarks-tmp.json..."
 
+# Process the downloaded bookmarks.json file into an intermediate format
+# - Handles null values gracefully using `select(. != null)` to avoid errors.
+# - Converts fields like item_id, favorite, and time_added to appropriate types.
 jq -s '.' bookmarks.json \
 | jq 'map(
   if .tags == null then .tags = {} else .tags = .tags end
