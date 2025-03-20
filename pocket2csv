@@ -161,6 +161,10 @@ while [ $OFFSET -lt $TOTAL ]; do
   TOTAL=$(echo "$RESPONSE" | jq '.total // 0' | bc)
   OFFSET=$((OFFSET + 30))
 
+  # Calculate and display progress
+  PROGRESS=$((OFFSET * 100 / TOTAL))
+  echo -n -e "[+] Progress: $PROGRESS% ($OFFSET/$TOTAL)\033[0K\r"
+
   read -r -d '' MY_DATA <<EOF
 {
 "state": "all",
