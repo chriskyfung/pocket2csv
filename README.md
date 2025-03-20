@@ -48,3 +48,13 @@ To use both flags together:
 ```sh
 ./pocket2csv -k YOUR_CONSUMER_KEY -t YOUR_ACCESS_TOKEN
 ```
+
+## Contributions
+
+The following modifications were made by [Chris K.Y. Fung](https://github.com/chriskyfung):
+
+- Added new command-line flags `-k` and `-t` to allow users to pass the consumer key and access token directly.
+- Updated the script logic to handle these new flags and skip unnecessary prompts or OAuth steps when the flags are used.
+- Minor adjustments to improve usability and streamline the user experience.
+
+For more details, see the "Features" section above.
