@@ -217,7 +217,6 @@ jq -s '.' bookmarks.json \
   | .month_added = (.time_added | select(. != null) | split("T") | .[0] | split("-") | .[1] | tonumber)
   | .day_added = (.time_added | select(. != null) | split("T") | .[0] | split("-") | .[2] | tonumber)
   | .hour_added = (.time_added | select(. != null) | split("T") | .[1] | split(":") | .[0] | tonumber)
-  | .tags = (.tags | select(. != null) | keys)
   | .ntags = (.tags | select(. != null) | length)
   | .tags = (.tags | select(. != null) | join(" AND "))
   | .given_domain = (.given_url | select(. != null) | split ("/") | .[2])
