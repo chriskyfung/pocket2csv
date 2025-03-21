@@ -55,6 +55,7 @@ The following modifications were made by [Chris K.Y. Fung](https://github.com/ch
 
 1. **Command-Line Usability**
    - Added `-k` and `-t` flags to allow users to pass the consumer key and access token directly via the command line.
+   - Introduced a `--mode` flag to support different script modes: `download`, `to_csv`, and `all`.
    - Streamlined user interactions by skipping unnecessary prompts or OAuth steps when these flags are used.
 
 2. **Pagination and Progress Tracking**
@@ -72,6 +73,7 @@ The following modifications were made by [Chris K.Y. Fung](https://github.com/ch
 
 5. **General Usability and Performance**
    - Reduced redundant prompts and improved error handling for a smoother user experience.
+   - Refactored authentication flow and Pocket API data handling for improved clarity and modularity.
    - Enhanced overall script performance and reliability, particularly for large datasets.
 
 For more details, see the commit history or review the script annotations.
