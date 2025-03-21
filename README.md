@@ -53,30 +53,25 @@ To use both flags together:
 
 The following modifications were made by [Chris K.Y. Fung](https://github.com/chriskyfung):
 
-1. Command-Line Flags for Consumer Key and Access Token
+1. **Command-Line Usability**
+   - Added `-k` and `-t` flags to allow users to pass the consumer key and access token directly via the command line.
+   - Streamlined user interactions by skipping unnecessary prompts or OAuth steps when these flags are used.
 
-   * Added new flags `-k` and `-t` to allow users to pass the consumer key and access token directly via the command line.
-   * Updated the script logic to handle these flags, skipping unnecessary prompts or OAuth steps when the flags are used.
+2. **Pagination and Progress Tracking**
+   - Implemented pagination support to fetch bookmarks in batches of 30 items from the Pocket API.
+   - Added real-time progress tracking, displaying download progress as a percentage for better user experience.
 
-2. Pagination Support
+3. **JSON Processing Enhancements**
+   - Improved JSON processing logic to handle null values gracefully using `select(. != null)`.
+   - Optimized field conversions (e.g., `item_id`, `favorite`, `time_added`) for type consistency and error prevention.
 
-   * Implemented pagination support to fetch bookmarks in batches of 30 items from the Pocket API.
-   * Used a `while` loop with `count` and `offset` parameters to handle multiple pages efficiently.
-   * Added real-time progress tracking, displaying the download progress as a percentage.
+4. **CSV Generation Improvements**
+   - Refactored CSV generation logic to dynamically generate column titles and append data rows with proper alignment.
+   - Expanded the `COLUMN_KEYS` array to include additional fields such as `status`, `time_updated`, `time_read`, `time_favorited`, `top_image_url`, `resolved_id`, `is_article`, `listen_duration_estimate`, `authors`, and `domain_metadata`.
+   - Ensured robust handling of null values and compatibility with the Pocket API's complete data structure.
 
-3. JSON Data Processing Enhancements
-
-   * Enhanced JSON processing logic to gracefully handle null values using `select(. != null)`.
-   * Optimized the conversion of fields such as `item_id`, `favorite`, and `time_added` to ensure type consistency and avoid errors.
-
-4. Usability Improvements
-
-   * Streamlined user interactions by reducing redundant prompts and improving error handling.
-   * Improved overall script performance and reliability for large datasets.
-
-5. CSV Generation Fixes and Improvements
-
-   * Refactored the logic for dynamically generating column titles and appending data rows to the CSV file.
-   * Ensured proper handling of null values and alignment with the defined column keys.
+5. **General Usability and Performance**
+   - Reduced redundant prompts and improved error handling for a smoother user experience.
+   - Enhanced overall script performance and reliability, particularly for large datasets.
 
 For more details, see the commit history or review the script annotations.

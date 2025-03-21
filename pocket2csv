@@ -54,6 +54,10 @@
 #   - CSV Generation Fixes and Improvements:
 #     - Refactored the logic for dynamically generating column titles and appending data rows to the CSV file.
 #     - Ensured proper handling of null values and alignment with the defined column keys.
+#   - Enhance CSV Export with Additional Fields:
+#     - Expanded the `COLUMN_KEYS` array to include new fields such as `status`, `time_updated`, `time_read`, `time_favorited`, `top_image_url`, `resolved_id`, `is_article`, `listen_duration_estimate`, `authors`, `domain_metadata`, and more.
+#     - Updated the script to handle the extended set of fields, ensuring compatibility with the Pocket API's complete data structure.
+#     - Improved the richness and detail of the exported CSV file, enabling more comprehensive analysis of bookmark data.
 #
 # Original copyright and license information remains intact.
 
@@ -209,16 +213,32 @@ jq -s '.' bookmarks.json \
   if .tags == null then .tags = {} else .tags = .tags end
   | .item_id = (.item_id | select(. != null) | tonumber)
   | .favorite = (.favorite | select(. != null) | tonumber)
+  | .status = (.status | select(. != null) | tonumber)
+  | .time_added = (.time_added | select(. != null) | tonumber | todate)
+  | .time_updated = (.time_updated | select(. != null) | tonumber | todate)
+  | .time_read = (.time_read | select(. != null) | tonumber)
+  | .time_favorited = (.time_favorited | select(. != null) | tonumber)
+  | .ntags = (.tags | select(. != null) | length)
+  | .tags = (.tags | select(. != null) | join(" AND "))
+  | .top_image_url = (.top_image_url | select(. != null))
+  | .resolved_id = (.resolved_id | select(. != null) | tonumber)
+  | .given_title = (.given_title | select(. != null) | gsub("[\\n\\t]"; ""))
+  | .resolved_title = (.resolved_title | select(. != null) | gsub("[\\n\\t]"; ""))
+  | .resolved_url = (.resolved_url | select(. != null))
+  | .excerpt = (.excerpt | select(. != null) | gsub("[\\n\\t]"; ""))
+  | .is_article = (.is_article | select(. != null) | tonumber)
   | .has_video = (.has_video | select(. != null) | tonumber)
   | .has_image = (.has_image | select(. != null) | tonumber)
   | .word_count = (.word_count | select(. != null) | tonumber)
-  | .time_added = (.time_added | select(. != null) | tonumber | todate)
+  | .lang = (.lang | select(. != null))
+  | .time_to_read = (.time_to_read | select(. != null) | tonumber)
+  | .listen_duration_estimate = (.listen_duration_estimate | select(. != null) | tonumber)
+  | .authors = (.authors | select(. != null) | to_entries | map(.value.name) | join(", "))
+  | .domain_metadata = (.domain_metadata.name | select(. != null))
   | .year_added = (.time_added | select(. != null) | split("T") | .[0] | split("-") | .[0] | tonumber)
   | .month_added = (.time_added | select(. != null) | split("T") | .[0] | split("-") | .[1] | tonumber)
   | .day_added = (.time_added | select(. != null) | split("T") | .[0] | split("-") | .[2] | tonumber)
   | .hour_added = (.time_added | select(. != null) | split("T") | .[1] | split(":") | .[0] | tonumber)
-  | .ntags = (.tags | select(. != null) | length)
-  | .tags = (.tags | select(. != null) | join(" AND "))
   | .given_domain = (.given_url | select(. != null) | split ("/") | .[2])
   | .n_given_domain = (.given_url | select(. != null) | split (".") | length)
   | .resolved_domain = (.resolved_url | select(. != null) | split ("/") | .[2])
@@ -231,14 +251,12 @@ jq -s '.' bookmarks.json \
   | .titles_match = (.given_title == .resolved_title)
   | .urls_match = (.given_url == .resolved_url)
   | .domains_match = (.given_domain == .resolved_domain)
-  | .excerpt = (.excerpt | select(. != null) | gsub("[\\n\\t]"; ""))
-  | .given_title = (.given_title | select(. != null) | gsub("[\\n\\t]"; ""))
 )' > bookmarks-tmp.json
 
 echo "[+] Converting bookmarks-tmp.json to bookmarks.csv..."
 
 # Define column keys
-COLUMN_KEYS=(item_id time_added given_title resolved_url tags favorite has_video has_image word_count year_added month_added day_added hour_added given_domain resolved_domain titles_match urls_match domains_match excerpt)
+COLUMN_KEYS=(item_id favorite status time_added  time_updated time_read time_favorited ntags tags top_image_url resolved_id given_title resolved_title resolved_url excerpt is_article has_video has_image word_count lang time_to_read listen_duration_estimate authors domain_metadata year_added month_added day_added hour_added given_domain n_given_domain resolved_domain n_resolved_domain n_domain_equal given_tld1 given_tld2 resolved_tld1 resolved_tld2 titles_match urls_match domains_match)
 
 # Dynamically generate column titles from the keys
 COLUMN_TITLES=$(printf "%s," "${COLUMN_KEYS[@]}" | sed 's/,$//')
