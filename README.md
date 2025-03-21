@@ -74,4 +74,9 @@ The following modifications were made by [Chris K.Y. Fung](https://github.com/ch
    * Streamlined user interactions by reducing redundant prompts and improving error handling.
    * Improved overall script performance and reliability for large datasets.
 
+5. CSV Generation Fixes and Improvements
+
+   * Refactored the logic for dynamically generating column titles and appending data rows to the CSV file.
+   * Ensured proper handling of null values and alignment with the defined column keys.
+
 For more details, see the commit history or review the script annotations.

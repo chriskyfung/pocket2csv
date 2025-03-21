@@ -50,6 +50,11 @@
 #     - Enhanced JSON processing logic to gracefully handle null values using `select(. != null)`.
 #     - Optimized the conversion of fields such as `item_id`, `favorite`, and `time_added` to ensure type consistency and avoid errors.
 #
+# - 21 Mar 2025 by Chris K.Y. Fung:
+#   - CSV Generation Fixes and Improvements:
+#     - Refactored the logic for dynamically generating column titles and appending data rows to the CSV file.
+#     - Ensured proper handling of null values and alignment with the defined column keys.
+#
 # Original copyright and license information remains intact.
 
 # Initialize variables
@@ -64,7 +69,7 @@ read -r -d '' LOGO <<'EOF'
  | |_) || (_) || (__ |   <|  __/| |_  / /_| (__ \__ \ \ V / 
  | .__/  \___/  \___||_|\_\\___| \__||____|\___||___/  \_/  
  | |                                                        
- |_|
+ |_|                                                       
 ...   
 
 EOF
@@ -98,7 +103,7 @@ fi
 
 if [ "$MY_ACCESS_TOKEN" == "" ]
 then
-  MY_CODE=$(\
+  MY_CODE=$(
   curl \
     --silent \
     --request POST \
@@ -127,7 +132,7 @@ then
   }
 EOF
 
-  MY_ACCESS_TOKEN=$(\
+  MY_ACCESS_TOKEN=$(
   curl \
     --silent \
     --request POST \
@@ -233,8 +238,19 @@ jq -s '.' bookmarks.json \
 
 echo "[+] Converting bookmarks-tmp.json to bookmarks.csv..."
 
-jq -r -s 'if .[0] != null then .[0] | keys_unsorted | @csv else empty end' < bookmarks-tmp.json > bookmarks.csv
+# Define column keys
+COLUMN_KEYS=(item_id time_added given_title resolved_url tags favorite has_video has_image word_count year_added month_added day_added hour_added given_domain resolved_domain titles_match urls_match domains_match excerpt)
 
-jq -r 'map(select(.item_id != null and .resolved_url != null)) | .[] | [.item_id, .time_added, .given_title, .resolved_url, .tags] | @csv' bookmarks-tmp.json >> bookmarks.csv
+# Dynamically generate column titles from the keys
+COLUMN_TITLES=$(printf "%s," "${COLUMN_KEYS[@]}" | sed 's/,$//')
+
+# Write column titles to the CSV file
+echo "$COLUMN_TITLES" > bookmarks.csv
+
+# Append data rows to the CSV file corresponding to the column keys
+jq -r --argjson keys "$(printf '%s\n' "${COLUMN_KEYS[@]}" | jq -R . | jq -s .)" '
+  map(select(.item_id != null and .resolved_url != null)) | .[] | 
+  [$keys[] as $key | .[$key]] | @csv
+' bookmarks-tmp.json >> bookmarks.csv
 
 echo "[+] Done."
