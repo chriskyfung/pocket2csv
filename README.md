@@ -65,6 +65,7 @@ The following modifications were made by [Chris K.Y. Fung](https://github.com/ch
 3. **JSON Processing Enhancements**
    - Improved JSON processing logic to handle null values gracefully using `select(. != null)`.
    - Optimized field conversions (e.g., `item_id`, `favorite`, `time_added`) for type consistency and error prevention.
+   - Fixed tags processing to correctly extract and concatenate tag names from the Pocket API response.
 
 4. **CSV Generation Improvements**
    - Refactored CSV generation logic to dynamically generate column titles and append data rows with proper alignment.
