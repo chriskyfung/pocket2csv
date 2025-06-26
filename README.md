@@ -1,5 +1,19 @@
 # pocket2csv
 
+> [!NOTE] 
+> **DEPRECATION NOTICE**
+>
+> **This tool is now deprecated and will no longer be maintained.**
+>
+> Mozilla has announced the [shutdown of Pocket](https://support.mozilla.org/en-US/kb/future-of-pocket), which will be completed by October 8, 2025. As this tool relies on the Pocket API, it will cease to function.
+> 
+> **Key Dates:**
+> 
+> *   **July 8, 2025**: Pocket will enter "export-only" mode.
+> *   **October 8, 2025**: All user data will be permanently deleted from Pocket.
+> 
+> Please export your data from Pocket directly before the final shutdown.
+
 A simple bash script to export your [Pocket](https://getpocket.com/) bookmarks to a CSV file.
 
 For this script to work, you need:
